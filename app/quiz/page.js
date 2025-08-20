@@ -36,13 +36,20 @@ export default function Quiz() {
         setLoading(false);
     }, [router]);
 
+    // quiz/page.js ke andar
     const handleAnswer = async (option) => {
-        if (option === quizData[current].answer) setScore(score + 1);
+        // 1. Final score ko ek variable me store karo
+        let newScore = score;
+
+        if (option === quizData[current].answer) newScore++;
 
         if (current < quizData.length - 1) {
             setCurrent(current + 1);
+            setScore(newScore); // optional, UI update ke liye
         } else {
+            // 2. Firebase me correct score save karo
             const collectionName = `class${user.className}Results`;
+
             const q = query(collection(db, collectionName), where("rollNumber", "==", user.roll));
             const querySnapshot = await getDocs(q);
 
@@ -55,13 +62,15 @@ export default function Quiz() {
             await addDoc(collection(db, collectionName), {
                 name: user.name,
                 rollNumber: user.roll,
-                score,
+                score: newScore
             });
 
-            setCompleted(true); // Show result section
+            alert(`Quiz Completed! Your score: ${newScore}`);
             localStorage.removeItem("quizUser");
+            router.push("/");
         }
     };
+
 
     if (loading) return <p className="quiz-loading">Loading quiz...</p>;
 
