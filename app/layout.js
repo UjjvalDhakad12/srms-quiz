@@ -16,8 +16,6 @@ export const metadata = {
   description: "This is a quiz app. this is for school",
   icons: {
     icon: "/icon.png",        // default icon
-    shortcut: "/icon.png",    // shortcut icon
-    apple: "/icon.png",    // apple devices ke liye
   },
 };
 

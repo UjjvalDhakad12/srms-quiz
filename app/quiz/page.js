@@ -4,20 +4,30 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { db } from "../../firebaseConfig";
 import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
-import { quizDataByClass } from "../quizData.js"; // Import questions
-import '../quiz/quiz.css'
+import { quizDataByClass } from "../quizData.js";
+import "../quiz/quiz.css";
 
 export default function Quiz() {
     const router = useRouter();
+
+    // ------------------ STATES ------------------
     const [user, setUser] = useState(null);
     const [quizData, setQuizData] = useState([]);
-    const [current, setCurrent] = useState(0);
+    const [answers, setAnswers] = useState({});
+    const [page, setPage] = useState(0);
     const [score, setScore] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [completed, setCompleted] = useState(false); // New state for showing result
+    const [completed, setCompleted] = useState(false);
 
+    // ✅ New state → For submit loading
+    const [submitting, setSubmitting] = useState(false);
+
+    const QUESTIONS_PER_PAGE = 5;
+
+    // ------------------ QUIZ LOADING ------------------
     useEffect(() => {
         const userData = JSON.parse(localStorage.getItem("quizUser"));
+
         if (!userData) {
             alert("No user data found. Redirecting to home.");
             router.push("/");
@@ -36,47 +46,92 @@ export default function Quiz() {
         setLoading(false);
     }, [router]);
 
-    const handleAnswer = async (option) => {
-        // 1️⃣ Score calculate in a variable
-        let newScore = score;
-        if (option === quizData[current].answer) newScore++;
+    // ------------------ HANDLE CHECKBOX ------------------
+    const handleCheckbox = (qIndex, option) => {
+        setAnswers((prev) => ({
+            ...prev,
+            [qIndex]: option
+        }));
+    };
 
-        // 2️⃣ Move to next question or finish quiz
-        if (current < quizData.length - 1) {
-            setCurrent(current + 1);
-            setScore(newScore); // optional: UI update ke liye
-        } else {
-            // 3️⃣ Firebase collection per class
+    // ------------------ NEXT PAGE ------------------
+    const handleNext = () => {
+        const start = page * QUESTIONS_PER_PAGE;
+        const end = start + QUESTIONS_PER_PAGE;
+        const currentPageQuestions = quizData.slice(start, end);
+
+        const allAnswered = currentPageQuestions.every(
+            (_, idx) => answers[start + idx] !== undefined
+        );
+
+        if (!allAnswered) {
+            alert("Please answer all questions before proceeding!");
+            return;
+        }
+
+        setPage((prev) => prev + 1);
+    };
+
+    // ------------------ BACK PAGE ------------------
+    const handleBack = () => {
+        setPage((prev) => prev - 1);
+    };
+
+    // ------------------ FINAL SUBMIT ------------------
+    const handleSubmit = async () => {
+        setSubmitting(true); // ✅ Show loading box when submitting
+
+        try {
+            let finalScore = 0;
+            quizData.forEach((q, idx) => {
+                if (answers[idx] === q.answer) finalScore++;
+            });
+
             const collectionName = `class${user.className}Results`;
 
-            // 4️⃣ Duplicate roll number check
-            const q = query(collection(db, collectionName), where("rollNumber", "==", user.roll));
-            const querySnapshot = await getDocs(q);
+            const qSnap = query(
+                collection(db, collectionName),
+                where("rollNumber", "==", user.roll)
+            );
+            const querySnapshot = await getDocs(qSnap);
 
             if (!querySnapshot.empty) {
-                alert("You have already taken the quiz for this class!");
+                alert("You have already taken the quiz!");
                 router.push("/");
                 return;
             }
 
-            // 5️⃣ Save correct score
             await addDoc(collection(db, collectionName), {
                 name: user.name,
                 rollNumber: user.roll,
-                score: newScore,
+                score: finalScore,
             });
 
-            // 6️⃣ Show result section
-            setScore(newScore); // final UI update
+            setScore(finalScore);
             setCompleted(true);
+
             localStorage.removeItem("quizUser");
+        } catch (error) {
+            console.error("Error submitting quiz:", error);
+            alert("Something went wrong while submitting. Try again.");
+        } finally {
+            setSubmitting(false); // ✅ Hide loading after submission is done
         }
     };
 
-
+    // ------------------ LOADING QUIZ DATA ------------------
     if (loading) return <p className="quiz-loading">Loading quiz...</p>;
 
-    // Result section after quiz is completed
+    // ------------------ SUBMITTING LOADING SCREEN ------------------
+    if (submitting) {
+        return (
+            <div className="quiz-loading">
+                <p>Submitting your answers... Please wait</p>
+            </div>
+        );
+    }
+
+    // ------------------ RESULT PAGE ------------------
     if (completed) {
         return (
             <div className="quiz-result-container">
@@ -94,18 +149,56 @@ export default function Quiz() {
         );
     }
 
+    // ------------------ QUIZ PAGE ------------------
+    const start = page * QUESTIONS_PER_PAGE;
+    const end = start + QUESTIONS_PER_PAGE;
+    const currentQuestions = quizData.slice(start, end);
+
     return (
         <div className="quiz-container">
             <h2 className="quiz-title">Class {user.className} Quiz</h2>
-            <h3 className="quiz-question">{quizData[current].question}</h3>
-            <div className="quiz-options">
-                {quizData[current].options.map((opt, idx) => (
-                    <button key={idx} onClick={() => handleAnswer(opt)} className="quiz-option">
-                        {opt}
+
+            {currentQuestions.map((q, idx) => {
+                const actualIndex = start + idx;
+                return (
+                    <div key={actualIndex} className="quiz-question-block">
+                        <h3 className="quiz-question">{q.question}</h3>
+                        <div className="quiz-options">
+                            {q.options.map((opt, i) => (
+                                <label key={i} className="quiz-option">
+                                    <input
+                                        type="checkbox"
+                                        checked={answers[actualIndex] === opt}
+                                        onChange={() => handleCheckbox(actualIndex, opt)}
+                                    />
+                                    {opt}
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                );
+            })}
+
+            <div className="quiz-navigation">
+                {page > 0 && (
+                    <button onClick={handleBack} className="quiz-nav-button">
+                        Back
                     </button>
-                ))}
+                )}
+                {end < quizData.length ? (
+                    <button onClick={handleNext} className="quiz-nav-button">
+                        Next
+                    </button>
+                ) : (
+                    <button onClick={handleSubmit} className="quiz-submit-button">
+                        Submit
+                    </button>
+                )}
             </div>
-            <p className="quiz-progress">Question {current + 1} of {quizData.length}</p>
+
+            <p className="quiz-progress">
+                Page {page + 1} of {Math.ceil(quizData.length / QUESTIONS_PER_PAGE)}
+            </p>
         </div>
     );
 }

@@ -3,6 +3,15 @@ export const quizDataByClass = {
     1: [
         { question: "2+2=?", options: ["1", "2", "3", "4"], answer: "4" },
         { question: "Color of sky?", options: ["Blue", "Green", "Red", "Yellow"], answer: "Blue" },
+        { question: "2+2=?", options: ["1", "2", "3", "4"], answer: "4" },
+        { question: "Color of sky?", options: ["Blue", "Green", "Red", "Yellow"], answer: "Blue" },
+        { question: "2+2=?", options: ["1", "2", "3", "4"], answer: "4" },
+        { question: "Color of sky?", options: ["Blue", "Green", "Red", "Yellow"], answer: "Blue" },
+        { question: "2+2=?", options: ["1", "2", "3", "4"], answer: "4" },
+        { question: "Color of sky?", options: ["Blue", "Green", "Red", "Yellow"], answer: "Blue" },
+        { question: "2+2=?", options: ["1", "2", "3", "4"], answer: "4" },
+        { question: "Color of sky?", options: ["Blue", "Green", "Red", "Yellow"], answer: "Blue" },
+        
     ],
     2: [
         { question: "5-2=?", options: ["2", "3", "4", "5"], answer: "3" },
