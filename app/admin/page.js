@@ -116,6 +116,7 @@ export default function Admin() {
                                 <th>Name</th>
                                 <th>Roll Number</th>
                                 <th>Score</th>
+                                <th>Submitted At</th> {/* ✅ Added */}
                             </tr>
                         </thead>
                         <tbody>
@@ -125,6 +126,7 @@ export default function Admin() {
                                     <td>{res.name}</td>
                                     <td>{res.rollNumber}</td>
                                     <td>{res.score}</td>
+                                    <td>{res.submittedAt || "N/A"}</td> {/* ✅ Added */}
                                 </tr>
                             ))}
                         </tbody>

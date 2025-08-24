@@ -48,18 +48,46 @@ export default function Quiz() {
         setSubmitting(true);
         try {
             let finalScore = 0;
-            quizData.forEach((q, idx) => { if (answers[idx] === q.answer) finalScore++; });
+            quizData.forEach((q, idx) => {
+                if (answers[idx] === q.answer) finalScore++;
+            });
+
             const collectionName = `class${user.className}Results`;
-            const qSnap = query(collection(db, collectionName), where("rollNumber", "==", user.roll));
+
+            // Check if quiz already taken
+            const qSnap = query(
+                collection(db, collectionName),
+                where("rollNumber", "==", user.roll)
+            );
             const querySnapshot = await getDocs(qSnap);
-            if (!querySnapshot.empty) { alert("Quiz already taken!"); router.push("/"); return; }
-            await addDoc(collection(db, collectionName), { name: user.name, rollNumber: user.roll, score: finalScore });
+
+            if (!querySnapshot.empty) {
+                alert("Quiz already taken!");
+                router.push("/");
+                return;
+            }
+
+            // ⏰ Save Date & Time
+            const submissionTime = new Date().toLocaleString();
+
+            // ✅ Save only once
+            await addDoc(collection(db, collectionName), {
+                name: user.name,
+                rollNumber: user.roll,
+                score: finalScore,
+                submittedAt: submissionTime   // 🔥 Time & Date saved
+            });
+
             setScore(finalScore);
             setCompleted(true);
             localStorage.removeItem("quizUser");
+
         } catch (err) {
-            console.error(err); alert("Error submitting quiz.");
-        } finally { setSubmitting(false); }
+            console.error(err);
+            alert("Error submitting quiz.");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     if (loading) return <p className="quiz-loading">Loading quiz...</p>;
