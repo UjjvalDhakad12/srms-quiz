@@ -72,6 +72,18 @@ export default function Quiz() {
     const handleBack = () => setPage(prev => prev - 1);
 
     const handleSubmit = async () => {
+        // 🔍 Final page validation
+        const start = page * QUESTIONS_PER_PAGE;
+        const end = quizData.length; // last page may have less than 5
+        const currentPageQuestions = quizData.slice(start, end);
+
+        const allAnswered = currentPageQuestions.every((_, idx) => answers[start + idx] !== undefined);
+
+        if (!allAnswered) {
+            alert("Please answer all questions before submitting!");
+            return;
+        }
+
         setSubmitting(true);
         try {
             let finalScore = 0;
@@ -113,13 +125,14 @@ export default function Quiz() {
         }
     };
 
+
     if (loading) return <p className="quiz-loading">Loading quiz...</p>;
     if (submitting) return <p className="quiz-loading">Submitting...</p>;
 
     // ⏰ Start screen
     if (!quizStarted && !completed) {
         return (
-            
+
             <div className="quiz-start-container" style={{
                 display: "flex",
                 flexDirection: "column",
@@ -128,7 +141,7 @@ export default function Quiz() {
                 height: "100vh",
                 background: "transparent"
             }}>
-                
+
                 <button
                     onClick={() => setQuizStarted(true)}
                     className="quiz-start-button"
